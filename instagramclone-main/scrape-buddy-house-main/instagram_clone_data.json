@@ -1,0 +1,283 @@
+{
+  "timestamp": "2025-11-23T16:17:16.455066",
+  "feed_posts": [
+    {
+      "post_number": 1,
+      "username": "emma_creative\nMalibu Beach, CA",
+      "image_src": "http://localhost:8080/src/assets/user1.jpg",
+      "caption": "emma_creative Chasing sunsets and good vibes 🌅 This moment was absolutely magical! #sunset #ocean #peaceful",
+      "likes": "0",
+      "timestamp": "2 HOURS AGO",
+      "comments_count": 46
+    },
+    {
+      "post_number": 2,
+      "username": "alex_photo\nBrooklyn, NY",
+      "image_src": "http://localhost:8080/src/assets/user2.jpg",
+      "caption": "alex_photo Breakfast goals 🍳🥑 Starting the day right with this beautiful spread. Recipe coming soon!",
+      "likes": "0",
+      "timestamp": "5 HOURS AGO",
+      "comments_count": 46
+    },
+    {
+      "post_number": 3,
+      "username": "sophie_arts\nPortland, OR",
+      "image_src": "http://localhost:8080/src/assets/user3.jpg",
+      "caption": "sophie_arts Home is where the plants are 🌿 Loving this natural light in my new space. #interiordesign #plantlover",
+      "likes": "0",
+      "timestamp": "1 DAY AGO",
+      "comments_count": 46
+    },
+    {
+      "post_number": 4,
+      "username": "alex_photo\nShibuya, Tokyo",
+      "image_src": "http://localhost:8080/src/assets/user2.jpg",
+      "caption": "alex_photo City lights and late nights 🌃✨ Tokyo never disappoints. The energy here is unmatched!",
+      "likes": "0",
+      "timestamp": "2 DAYS AGO",
+      "comments_count": 46
+    },
+    {
+      "post_number": 5,
+      "username": "emma_creative",
+      "image_src": "http://localhost:8080/src/assets/user1.jpg",
+      "caption": "emma_creative Meet Charlie! 🐶💛 The newest member of our family. He's already stolen our hearts!",
+      "likes": "0",
+      "timestamp": "3 DAYS AGO",
+      "comments_count": 45
+    },
+    {
+      "post_number": 6,
+      "username": "sophie_arts\nRocky Mountains, CO",
+      "image_src": "http://localhost:8080/src/assets/user3.jpg",
+      "caption": "sophie_arts Adventure awaits at every turn 🏔️ Hiking through these magnificent mountains reminded me how small we are in this vast world.",
+      "likes": "0",
+      "timestamp": "4 DAYS AGO",
+      "comments_count": 46
+    }
+  ],
+  "stories": [
+    {
+      "story_number": 1,
+      "username": "Your Story",
+      "avatar_src": "http://localhost:8080/src/assets/user1.jpg",
+      "has_gradient": true,
+      "viewed": false,
+      "is_own_story": true
+    },
+    {
+      "story_number": 2,
+      "username": "emma_creative",
+      "avatar_src": "http://localhost:8080/src/assets/user1.jpg",
+      "has_gradient": true,
+      "viewed": false,
+      "is_own_story": false
+    },
+    {
+      "story_number": 3,
+      "username": "emma_creative",
+      "avatar_src": "http://localhost:8080/src/assets/user1.jpg",
+      "has_gradient": true,
+      "viewed": false,
+      "is_own_story": false
+    },
+    {
+      "story_number": 4,
+      "username": "emma_creative",
+      "avatar_src": "http://localhost:8080/src/assets/user1.jpg",
+      "has_gradient": false,
+      "viewed": true,
+      "is_own_story": false
+    },
+    {
+      "story_number": 5,
+      "username": "User_5",
+      "avatar_src": null,
+      "has_gradient": false,
+      "viewed": true,
+      "is_own_story": false
+    },
+    {
+      "story_number": 6,
+      "username": "alex_photo",
+      "avatar_src": "http://localhost:8080/src/assets/user2.jpg",
+      "has_gradient": true,
+      "viewed": false,
+      "is_own_story": false
+    },
+    {
+      "story_number": 7,
+      "username": "alex_photo",
+      "avatar_src": "http://localhost:8080/src/assets/user2.jpg",
+      "has_gradient": true,
+      "viewed": false,
+      "is_own_story": false
+    },
+    {
+      "story_number": 8,
+      "username": "alex_photo",
+      "avatar_src": "http://localhost:8080/src/assets/user2.jpg",
+      "has_gradient": false,
+      "viewed": true,
+      "is_own_story": false
+    },
+    {
+      "story_number": 9,
+      "username": "sophie_arts",
+      "avatar_src": "http://localhost:8080/src/assets/user3.jpg",
+      "has_gradient": true,
+      "viewed": false,
+      "is_own_story": false
+    },
+    {
+      "story_number": 10,
+      "username": "sophie_arts",
+      "avatar_src": "http://localhost:8080/src/assets/user3.jpg",
+      "has_gradient": true,
+      "viewed": false,
+      "is_own_story": false
+    },
+    {
+      "story_number": 11,
+      "username": "sophie_arts",
+      "avatar_src": "http://localhost:8080/src/assets/user3.jpg",
+      "has_gradient": false,
+      "viewed": true,
+      "is_own_story": false
+    }
+  ],
+  "explore_posts": [
+    {
+      "post_number": 1,
+      "link": "http://localhost:8080/post/1",
+      "post_id": "1",
+      "image_src": "http://localhost:8080/src/assets/post1.jpg",
+      "alt_text": "Chasing sunsets and good vibes 🌅 This moment was absolutely magical! #sunset #ocean #peaceful"
+    },
+    {
+      "post_number": 2,
+      "link": "http://localhost:8080/post/2",
+      "post_id": "2",
+      "image_src": "http://localhost:8080/src/assets/post2.jpg",
+      "alt_text": "Breakfast goals 🍳🥑 Starting the day right with this beautiful spread. Recipe coming soon!"
+    },
+    {
+      "post_number": 3,
+      "link": "http://localhost:8080/post/3",
+      "post_id": "3",
+      "image_src": "http://localhost:8080/src/assets/post3.jpg",
+      "alt_text": "Home is where the plants are 🌿 Loving this natural light in my new space. #interiordesign #plantlover"
+    },
+    {
+      "post_number": 4,
+      "link": "http://localhost:8080/post/4",
+      "post_id": "4",
+      "image_src": "http://localhost:8080/src/assets/post4.jpg",
+      "alt_text": "City lights and late nights 🌃✨ Tokyo never disappoints. The energy here is unmatched!"
+    },
+    {
+      "post_number": 5,
+      "link": "http://localhost:8080/post/5",
+      "post_id": "5",
+      "image_src": "http://localhost:8080/src/assets/post5.jpg",
+      "alt_text": "Meet Charlie! 🐶💛 The newest member of our family. He's already stolen our hearts!"
+    },
+    {
+      "post_number": 6,
+      "link": "http://localhost:8080/post/6",
+      "post_id": "6",
+      "image_src": "http://localhost:8080/src/assets/post6.jpg",
+      "alt_text": "Adventure awaits at every turn 🏔️ Hiking through these magnificent mountains reminded me how small we are in this vast world."
+    }
+  ],
+  "profiles": [
+    {
+      "username": "alex_photo",
+      "full_name": "Alex Thompson",
+      "bio": "📸 Urban photographer | Street style\n🌆 Capturing city moments\n👇 Latest work below",
+      "verified": false,
+      "stats": {
+        "posts": "2",
+        "followers": "0",
+        "following": "0"
+      },
+      "posts": [
+        {
+          "image_src": "http://localhost:8080/src/assets/post2.jpg",
+          "alt_text": "Breakfast goals 🍳🥑 Starting the day right with this beautiful spread. Recipe coming soon!"
+        },
+        {
+          "image_src": "http://localhost:8080/src/assets/post4.jpg",
+          "alt_text": "City lights and late nights 🌃✨ Tokyo never disappoints. The energy here is unmatched!"
+        }
+      ]
+    },
+    {
+      "username": "sophie_arts",
+      "full_name": "Sophie Anderson",
+      "bio": "🎨 Artist & Designer | Creating magic\n🌸 Nature lover | Boho vibes\n🔗 Shop: sophiearts.com",
+      "verified": true,
+      "stats": {
+        "posts": "2",
+        "followers": "0",
+        "following": "0"
+      },
+      "posts": [
+        {
+          "image_src": "http://localhost:8080/src/assets/post3.jpg",
+          "alt_text": "Home is where the plants are 🌿 Loving this natural light in my new space. #interiordesign #plantlover"
+        },
+        {
+          "image_src": "http://localhost:8080/src/assets/post6.jpg",
+          "alt_text": "Adventure awaits at every turn 🏔️ Hiking through these magnificent mountains reminded me how small we are in this vast world."
+        }
+      ]
+    }
+  ],
+  "messages_data": {
+    "notes": [
+      {
+        "username": "john_photo",
+        "is_own_note": false,
+        "text": "Feeling creativ..."
+      },
+      {
+        "username": "sarah_food",
+        "is_own_note": false,
+        "text": "Coffee time ☕"
+      },
+      {
+        "username": "mike_fitness",
+        "is_own_note": false,
+        "text": "Gym done! 💪"
+      }
+    ],
+    "chats": [
+      {
+        "username": "john_photo",
+        "last_message": "Hey! Love your recent post 📸",
+        "timestamp": "1h ago",
+        "unread": true
+      },
+      {
+        "username": "sarah_food",
+        "last_message": "Thanks for the follow!",
+        "timestamp": "3h ago",
+        "unread": true
+      },
+      {
+        "username": "mike_fitness",
+        "last_message": "Check out my new workout routine!",
+        "timestamp": "1d ago",
+        "unread": false
+      },
+      {
+        "username": "david_tech",
+        "last_message": "Great content, keep it up! 🚀",
+        "timestamp": "2d ago",
+        "unread": false
+      }
+    ]
+  },
+  "post_details": []
+}
