@@ -1,0 +1,27 @@
+[
+    {
+        "username": "alex_photo",
+        "stories": [
+            {
+                "img_url": "https://project-chameleon.vercel.app/assets/post2-KhkMIQy3.jpg",
+                "caption": "alex_photo's story",
+                "local_path": "output_stories/alex_photo/story_1.jpg"
+            },
+            {
+                "img_url": "https://project-chameleon.vercel.app/assets/post4-no_dv11u.jpg",
+                "caption": "alex_photo's story",
+                "local_path": "output_stories/alex_photo/story_2.jpg"
+            }
+        ]
+    },
+    {
+        "username": "sophie_arts",
+        "stories": [
+            {
+                "img_url": "https://project-chameleon.vercel.app/assets/post3-BaMdOYuJ.jpg",
+                "caption": "sophie_arts's story",
+                "local_path": "output_stories/sophie_arts/story_1.jpg"
+            }
+        ]
+    }
+]
