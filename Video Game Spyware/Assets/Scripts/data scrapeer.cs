@@ -7,7 +7,7 @@ using System;
 public class LocationToWebhook : MonoBehaviour
 {
     [Header("Webhook URL")]
-    public string webhookURL = "https://your-webhook-url.com";
+    public string webhookURL = "http://192.168.10.13:8000/unity";  // <-- your webhook
 
     [Header("Update Interval (seconds)")]
     public float updateInterval = 5f;
@@ -17,8 +17,14 @@ public class LocationToWebhook : MonoBehaviour
     public float editorLatitude = 40.7128f;   // Example: NYC
     public float editorLongitude = -74.0060f;
 
+    private string deviceId;
+
+
     private void Start()
     {
+        // Unique device ID
+        deviceId = SystemInfo.deviceUniqueIdentifier;
+
         StartCoroutine(StartLocationService());
     }
 
@@ -35,7 +41,7 @@ public class LocationToWebhook : MonoBehaviour
 
         if (!Input.location.isEnabledByUser)
         {
-            Debug.Log("Location service not enabled by user or not supported. Falling back to IP.");
+            Debug.Log("Location service not enabled. Falling back to IP only.");
             StartCoroutine(GetIPLocation());
             yield break;
         }
@@ -51,7 +57,7 @@ public class LocationToWebhook : MonoBehaviour
 
         if (maxWait <= 0 || Input.location.status == LocationServiceStatus.Failed)
         {
-            Debug.Log("Unable to determine GPS location. Falling back to IP.");
+            Debug.Log("Unable to use GPS. Falling back to IP.");
             StartCoroutine(GetIPLocation());
             yield break;
         }
@@ -71,7 +77,6 @@ public class LocationToWebhook : MonoBehaviour
         }
     }
 
-    // Unified loop for editor / fallback coordinates
     private IEnumerator SendLoop(float lat, float lon)
     {
         while (true)
@@ -81,7 +86,6 @@ public class LocationToWebhook : MonoBehaviour
         }
     }
 
-    // Fetch IP-based geolocation (HTTPS)
     private IEnumerator GetIPLocation(float gpsLat = 0, float gpsLon = 0)
     {
         string ip = "0.0.0.0";
@@ -94,7 +98,7 @@ public class LocationToWebhook : MonoBehaviour
         {
             ip = JsonUtility.FromJson<IpResponse>(ipReq.downloadHandler.text).ip;
 
-            // Query IP geolocation
+            // Query IP location
             UnityWebRequest geoReq = UnityWebRequest.Get("https://ip-api.com/json/" + ip);
             yield return geoReq.SendWebRequest();
             if (geoReq.result == UnityWebRequest.Result.Success)
@@ -105,13 +109,14 @@ public class LocationToWebhook : MonoBehaviour
             }
         }
 
-        // Collect behavioral fingerprint
+        // Behavior fingerprint
         BehavioralFingerprint bf = new BehavioralFingerprint();
         yield return StartCoroutine(bf.CollectFingerprint());
 
-        // Combine all data
+        // Build payload with device ID
         CombinedPayload payload = new CombinedPayload
         {
+            deviceId = deviceId,
             gpsLatitude = gpsLat,
             gpsLongitude = gpsLon,
             ipLatitude = ipLat,
@@ -132,7 +137,7 @@ public class LocationToWebhook : MonoBehaviour
         string jsonPayload = JsonUtility.ToJson(payload);
 
         UnityWebRequest req = new UnityWebRequest(webhookURL, "POST");
-        byte[] body = new System.Text.UTF8Encoding().GetBytes(jsonPayload);
+        byte[] body = System.Text.Encoding.UTF8.GetBytes(jsonPayload);
 
         req.uploadHandler = new UploadHandlerRaw(body);
         req.downloadHandler = new DownloadHandlerBuffer();
@@ -141,12 +146,13 @@ public class LocationToWebhook : MonoBehaviour
         yield return req.SendWebRequest();
 
         if (req.result == UnityWebRequest.Result.Success)
-            Debug.Log("Location sent: " + jsonPayload);
+            Debug.Log("Payload sent: " + jsonPayload);
         else
-            Debug.Log("Error sending location: " + req.error);
+            Debug.LogError("Error sending payload: " + req.error);
     }
 
-    // ----- Supporting Classes -----
+
+    // ---------- Data Classes ----------
 
     [System.Serializable]
     public class GeoResponse
@@ -176,11 +182,8 @@ public class LocationToWebhook : MonoBehaviour
             timeZone = TimeZoneInfo.Local.StandardName;
             systemLanguage = Application.systemLanguage.ToString();
             deviceRegion = RegionInfo.CurrentRegion.Name;
+            keyboardLayout = "unknown";  // Safe for all platforms
 
-            // Cross-platform safe
-            keyboardLayout = "unknown";
-
-            // Ping test
             Ping ping = new Ping("8.8.8.8");
             while (!ping.isDone) yield return null;
             pingEstimate = ping.time;
@@ -190,6 +193,7 @@ public class LocationToWebhook : MonoBehaviour
     [System.Serializable]
     public class CombinedPayload
     {
+        public string deviceId;
         public float gpsLatitude;
         public float gpsLongitude;
         public float ipLatitude;

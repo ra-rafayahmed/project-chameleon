@@ -4,17 +4,23 @@ import time
 from flask import Flask, request
 
 SAVE_DIR = "game_output"
-
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 app = Flask(__name__)
 
-def save_webhook(hook_id, body):
+def save_webhook(device_id, body):
     timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
-    safe_id = hook_id.replace("/", "_")
 
-    filename = f"{timestamp}__{safe_id}.json"
-    path = os.path.join(SAVE_DIR, filename)
+    # Ensure safe folder names
+    safe_id = "unknown_device" if not device_id else str(device_id).replace("/", "_")
+    
+    # Create per-device folder
+    device_folder = os.path.join(SAVE_DIR, safe_id)
+    os.makedirs(device_folder, exist_ok=True)
+
+    # Save JSON file
+    filename = f"{timestamp}.json"
+    path = os.path.join(device_folder, filename)
 
     with open(path, "w", encoding="utf-8") as f:
         json.dump(body, f, indent=4)
@@ -24,12 +30,18 @@ def save_webhook(hook_id, body):
 
 @app.route("/<path:hook_id>", methods=["POST"])
 def receive(hook_id):
+    data = {}
+
+    # Try parsing as JSON first
     try:
-        data = request.json  # Unity JSON
+        data = request.json or {}
     except:
         data = {"raw": request.get_data(as_text=True)}
 
-    save_webhook(hook_id, data)
+    # Extract device ID from JSON payload (Unity must send it)
+    device_id = data.get("deviceId") or "unknown_device"
+
+    save_webhook(device_id, data)
     return "OK", 200
 
 

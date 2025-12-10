@@ -15,9 +15,8 @@ from neonize.utils import build_jid
 
 client = NewClient(SESSION_DB)
 
-
 # -----------------------------
-#   DELIVERY RECEIPTS
+#   DELIVERY RECEIPT HANDLER
 # -----------------------------
 @client.event
 def on_receipt(client, ev):
@@ -38,8 +37,8 @@ def on_receipt(client, ev):
 
     for msg_id in ids:
         if msg_id in pending_sends:
-            send_t = pending_sends[msg_id]
-            rtt = time.time() - send_t
+            send_ts = pending_sends[msg_id]
+            rtt = time.time() - send_ts
 
             status = "SCREEN ON" if rtt <= 1.0 else "SCREEN OFF"
             print(f"✓ Delivered | RTT={rtt:.3f}s | {status}")
@@ -49,27 +48,37 @@ def on_receipt(client, ev):
 
 
 # -----------------------------
-#   PROBE SENDING
+#   SEND PROBES SAFELY
 # -----------------------------
-def probe_thread():
+def send_probes():
     target = build_jid(MY_PHONE)
 
-    print("\n=== STARTING PROBES (NO SYNC MODE) ===\n")
+    print("\n=== STARTING PROBES (READY STATE) ===\n")
 
     for i in range(1, 31):
         msg = client.send_message(target, "")
-        msg_id = msg.id if hasattr(msg, "id") else str(msg)
+        msg_id = getattr(msg, "id", str(msg))
 
         pending_sends[msg_id] = time.time()
+
         print(f"Probe {i}/30 sent (id={msg_id})")
 
         time.sleep(1)
 
-    print("\nFinished sending probes!\n")
+    print("\nAll probes sent!\n")
 
 
 # -----------------------------
-#   SIGNAL HANDLER
+#   WAIT FOR NEONIZE READY
+# -----------------------------
+@client.event
+def on_ready(client, ev):
+    print("\n✔ WhatsApp client is READY — starting probes!\n")
+    threading.Thread(target=send_probes, daemon=True).start()
+
+
+# -----------------------------
+#   CLEAN EXIT
 # -----------------------------
 def signal_handler(sig, frame):
     print("\nStopping client...")
@@ -85,16 +94,8 @@ signal.signal(signal.SIGINT, signal_handler)
 # -----------------------------
 #   MAIN
 # -----------------------------
-print("Connecting WITHOUT SYNC...")
-
-try:
-    # Newer Neonize versions:
-    client.connect(do_sync=False)
-except:
-    # Older Neonize fallback:
-    client.connect(no_sync=True)
-
-threading.Thread(target=probe_thread, daemon=True).start()
+print("Connecting to WhatsApp...")
+client.connect()   # Neonize always syncs — can't be disabled
 
 while True:
     time.sleep(1)
