@@ -2,7 +2,7 @@
 
 A comprehensive C++ application implementing the top 10 most suitable Data Structures and Algorithms for Project Chameleon's multi-source data analysis system.
 
-## 🎯 Features
+##  Features
 
 ### Top 10 DSA Techniques Implemented
 
@@ -17,7 +17,7 @@ A comprehensive C++ application implementing the top 10 most suitable Data Struc
 9. **Hash Maps** - Device/user linking and deduplication
 10. **Priority Queue** - Scheduling and ranking operations
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 DSA/
@@ -49,7 +49,7 @@ DSA/
 └── README.md
 ```
 
-## 🚀 Building
+##  Building
 
 ### Prerequisites
 
@@ -93,7 +93,7 @@ cmake --build .
 .\bin\chameleon_dsa.exe
 ```
 
-## 🎮 Usage
+##  Usage
 
 The application features a beautiful CLI interface with interactive menus:
 
@@ -118,7 +118,7 @@ struct SupabaseConfig {
 };
 ```
 
-## 📊 Database Schema Support
+##  Database Schema Support
 
 The application works with the following Supabase tables:
 
@@ -128,7 +128,7 @@ The application works with the following Supabase tables:
 - `game_devices` - Device telemetry
 - `whatsapp_events` - WhatsApp RTT timeline
 
-## 🧪 Algorithm Details
+##  Algorithm Details
 
 ### Union-Find (DSU)
 - Path compression for O(α(n)) amortized time
@@ -170,7 +170,7 @@ The application works with the following Supabase tables:
 - O(mn) time complexity
 - Similarity ratio calculation
 
-## 📝 Notes
+##  Notes
 
 - All algorithms are implemented from scratch
 - Code includes lowercase comments as requested
@@ -178,12 +178,12 @@ The application works with the following Supabase tables:
 - Data is loaded from Supabase at startup
 - Sample data is used if database is empty or unavailable
 
-## 🔒 Security
+##  Security
 
 - API keys should be stored securely in production
 - Consider using environment variables for sensitive data
 - Validate all user inputs
 
-## 📄 License
+##  License
 
 This project is part of Project Chameleon research initiative.
