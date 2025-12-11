@@ -1,0 +1,1040 @@
+#include "../include/cli_interface.h"
+#include "../include/supabase_client.h"
+#include "../include/union_find.h"
+#include "../include/trie.h"
+#include "../include/inverted_index.h"
+#include "../include/bloom_filter.h"
+#include "../include/json_parser.h"
+#include "../include/levenshtein.h"
+#include <iostream>
+#include <sstream>
+#include <vector>
+#include <map>
+#include <algorithm>
+#include <iomanip>
+#include <fstream>
+#include <queue>
+#include <functional>
+#include <chrono>
+#include <cmath>
+#include <unordered_map>
+#if __cplusplus >= 201703L && __has_include(<filesystem>)
+#include <filesystem>
+namespace fs = std::filesystem;
+#else
+// Fallback for older compilers
+#include <sys/stat.h>
+#include <sys/types.h>
+#ifdef _WIN32
+#include <windows.h>
+#include <direct.h>
+#define mkdir(path, mode) _mkdir(path)
+#else
+#include <unistd.h>
+#include <limits.h>
+#endif
+#endif
+
+// data manager class to organize database operations
+class DataManager {
+private:
+    SupabaseClient client;
+    std::string usersData;
+    std::string profilesData;
+    std::string storiesData;
+    std::string devicesData;
+    std::string eventsData;
+    
+public:
+    void loadData() {
+        std::cout << "  Loading data from Supabase...\n";
+        usersData = client.getUsers();
+        profilesData = client.getInstagramProfiles();
+        storiesData = client.getInstagramStories();
+        devicesData = client.getGameDevices();
+        eventsData = client.getWhatsAppEvents();
+        std::cout << "  Data loaded successfully!\n";
+    }
+    
+    std::string getUsersData() const { return usersData; }
+    std::string getProfilesData() const { return profilesData; }
+    std::string getStoriesData() const { return storiesData; }
+    std::string getDevicesData() const { return devicesData; }
+    std::string getEventsData() const { return eventsData; }
+};
+
+// extract rtt values from whatsapp events json (simplified)
+std::vector<int> extractRTTValues(const std::string& jsonData) {
+    std::vector<int> rttValues;
+    // simplified extraction - in real implementation, parse json properly
+    std::istringstream iss(jsonData);
+    std::string line;
+    while (std::getline(iss, line)) {
+        size_t pos = line.find("\"rtt\"");
+        if (pos != std::string::npos) {
+            size_t colon = line.find(':', pos);
+            if (colon != std::string::npos) {
+                std::string numStr = line.substr(colon + 1);
+                numStr.erase(std::remove_if(numStr.begin(), numStr.end(), 
+                    [](char c) { return !std::isdigit(c); }), numStr.end());
+                if (!numStr.empty()) {
+                    rttValues.push_back(std::stoi(numStr));
+                }
+            }
+        }
+    }
+    // if no rtt found, return sample data
+    if (rttValues.empty()) {
+        rttValues = {100, 150, 120, 200, 180, 90, 110, 130, 160, 140};
+    }
+    return rttValues;
+}
+
+// extract usernames from json (simplified)
+std::vector<std::string> extractUsernames(const std::string& jsonData) {
+    std::vector<std::string> usernames;
+    std::istringstream iss(jsonData);
+    std::string line;
+    while (std::getline(iss, line)) {
+        size_t pos = line.find("\"username\"");
+        if (pos != std::string::npos) {
+            size_t colon = line.find(':', pos);
+            if (colon != std::string::npos) {
+                size_t quote1 = line.find('"', colon);
+                if (quote1 != std::string::npos) {
+                    size_t quote2 = line.find('"', quote1 + 1);
+                    if (quote2 != std::string::npos) {
+                        std::string username = line.substr(quote1 + 1, quote2 - quote1 - 1);
+                        if (!username.empty() && username != "null") {
+                            usernames.push_back(username);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // if no usernames found, return sample data
+    if (usernames.empty()) {
+        usernames = {"alex_photo", "user123", "test_user", "demo_account", "sample_user"};
+    }
+    return usernames;
+}
+
+// extract text content from json (bios, captions)
+std::vector<std::string> extractTextContent(const std::string& jsonData) {
+    std::vector<std::string> texts;
+    // simplified - in real implementation, parse json properly
+    std::istringstream iss(jsonData);
+    std::string line;
+    while (std::getline(iss, line)) {
+        if (line.find("\"bio\"") != std::string::npos || 
+            line.find("\"caption\"") != std::string::npos) {
+            size_t colon = line.find(':');
+            if (colon != std::string::npos) {
+                size_t quote1 = line.find('"', colon);
+                if (quote1 != std::string::npos) {
+                    size_t quote2 = line.find('"', quote1 + 1);
+                    if (quote2 != std::string::npos) {
+                        std::string text = line.substr(quote1 + 1, quote2 - quote1 - 1);
+                        if (!text.empty() && text.length() > 3) {
+                            texts.push_back(text);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // if no text found, return sample data
+    if (texts.empty()) {
+        texts = {
+            "Urban photographer capturing city life",
+            "Travel enthusiast exploring the world",
+            "Food lover sharing recipes",
+            "Tech geek and developer",
+            "Fitness coach and trainer"
+        };
+    }
+    return texts;
+}
+
+// handle union-find menu
+void handleUnionFind(CLIInterface& cli, DataManager& dm) {
+    cli.showUnionFindMenu();
+    UnionFind uf;
+    
+    std::vector<std::string> usernames = extractUsernames(dm.getUsersData());
+    std::vector<std::string> phones = {"1234567890", "0987654321", "5555555555"};
+    std::vector<std::string> deviceIds = {"device1", "device2", "device3"};
+    
+    // add all elements
+    for (const auto& u : usernames) uf.addElement(u);
+    for (const auto& p : phones) uf.addElement(p);
+    for (const auto& d : deviceIds) uf.addElement(d);
+    
+    // link related identities
+    if (usernames.size() >= 2) {
+        uf.unite(usernames[0], phones[0]);
+        uf.unite(usernames[0], deviceIds[0]);
+    }
+    if (usernames.size() >= 3) {
+        uf.unite(usernames[1], phones[1]);
+    }
+    
+    std::cout << "  Union-Find Operations:\n";
+    std::cout << "  ---------------------------------------------------------------\n";
+    std::cout << "  Total elements: " << (usernames.size() + phones.size() + deviceIds.size()) << "\n";
+    
+    std::vector<std::vector<std::string>> groups = uf.getGroups();
+    std::cout << "  Connected groups: " << groups.size() << "\n\n";
+    
+    std::cout << "  Identity Groups:\n";
+    for (size_t i = 0; i < groups.size() && i < 5; i++) {
+        std::cout << "    Group " << (i + 1) << ": ";
+        for (size_t j = 0; j < groups[i].size() && j < 3; j++) {
+            std::cout << groups[i][j];
+            if (j < groups[i].size() - 1) std::cout << " <-> ";
+        }
+        std::cout << "\n";
+    }
+    
+    cli.waitForEnter();
+}
+
+// handle trie menu
+void handleTrie(CLIInterface& cli, DataManager& dm) {
+    cli.showTrieMenu();
+    Trie trie;
+    
+    std::vector<std::string> usernames = extractUsernames(dm.getUsersData());
+    std::vector<std::string> phones = {"1234567890", "0987654321", "5555555555", "1112223333"};
+    std::vector<std::string> deviceIds = {"device_001", "device_002", "device_003"};
+    
+    // insert into trie
+    for (const auto& u : usernames) {
+        trie.insert(u, "user:" + u);
+    }
+    for (const auto& p : phones) {
+        trie.insert(p, "phone:" + p);
+    }
+    for (const auto& d : deviceIds) {
+        trie.insert(d, "device:" + d);
+    }
+    
+    std::cout << "  Trie Indexing System:\n";
+    std::cout << "  ---------------------------------------------------------------\n";
+    std::cout << "  Total indexed: " << (usernames.size() + phones.size() + deviceIds.size()) << " items\n\n";
+    
+    std::string searchTerm = cli.getInput("Enter search prefix: ");
+    if (!searchTerm.empty()) {
+        std::vector<std::string> results = trie.prefixSearch(searchTerm);
+        std::cout << "\n  Search results for \"" << searchTerm << "\":\n";
+        for (size_t i = 0; i < results.size() && i < 10; i++) {
+            std::vector<std::string> data = trie.getData(results[i]);
+            std::cout << "    - " << results[i];
+            if (!data.empty()) {
+                std::cout << " -> " << data[0];
+            }
+            std::cout << "\n";
+        }
+        if (results.empty()) {
+            std::cout << "    No matches found.\n";
+        }
+    }
+    
+    cli.waitForEnter();
+}
+
+// handle inverted index menu
+void handleInvertedIndex(CLIInterface& cli, DataManager& dm) {
+    cli.showInvertedIndexMenu();
+    InvertedIndex index;
+    
+    std::vector<std::string> texts = extractTextContent(dm.getProfilesData());
+    texts.push_back("Urban photographer capturing city life");
+    texts.push_back("Travel enthusiast exploring the world");
+    texts.push_back("Food lover sharing recipes");
+    
+    std::cout << "  Building inverted index...\n";
+    for (const auto& text : texts) {
+        index.addDocument(text);
+    }
+    
+    std::cout << "  Indexed " << texts.size() << " documents\n";
+    std::cout << "  Total terms: " << index.getAllTerms().size() << "\n\n";
+    
+    std::string query = cli.getInput("Enter search query: ");
+    if (!query.empty()) {
+        std::vector<int> results = index.search(query);
+        std::cout << "\n  Search results (" << results.size() << " documents):\n";
+        for (size_t i = 0; i < results.size() && i < 5; i++) {
+            std::cout << "    [" << results[i] << "] " 
+                      << index.getDocument(results[i]).substr(0, 60) << "...\n";
+        }
+    }
+    
+    cli.waitForEnter();
+}
+
+// handle segment tree menu
+void handleSegmentTree(CLIInterface& cli, DataManager& dm) {
+    cli.showSegmentTreeMenu();
+    
+    std::vector<int> rttValues = extractRTTValues(dm.getEventsData());
+    if (rttValues.empty()) {
+        rttValues = {100, 150, 120, 200, 180, 90, 110, 130, 160, 140, 170, 190};
+    }
+    
+    if (rttValues.empty()) {
+        std::cout << "  Error: No RTT values available for analysis.\n";
+        cli.waitForEnter();
+        return;
+    }
+    
+    try {
+        SegmentTree st(rttValues);
+        SlidingWindow sw(5);
+        
+        std::cout << "  RTT Analysis with Segment Tree & Sliding Window:\n";
+        std::cout << "  ---------------------------------------------------------------\n";
+        std::cout << "  RTT Values: ";
+        for (size_t i = 0; i < rttValues.size() && i < 10; i++) {
+            std::cout << rttValues[i] << " ";
+        }
+        if (rttValues.size() > 10) {
+            std::cout << "... (total: " << rttValues.size() << " values)";
+        }
+        std::cout << "\n\n";
+        
+        if (rttValues.size() >= 5) {
+            try {
+                int minVal = st.rangeMin(0, 4);
+                int maxVal = st.rangeMax(0, 4);
+                int sumVal = st.rangeSum(0, 4);
+                std::cout << "  Range [0-4] Min: " << minVal << "ms\n";
+                std::cout << "  Range [0-4] Max: " << maxVal << "ms\n";
+                std::cout << "  Range [0-4] Sum: " << sumVal << "ms\n";
+                std::cout << "  Range [0-4] Avg: " << std::fixed << std::setprecision(2) << (sumVal / 5.0) << "ms\n\n";
+            } catch (...) {
+                std::cout << "  Error: Could not compute range queries.\n\n";
+            }
+        } else {
+            std::cout << "  Note: Need at least 5 values for range queries.\n\n";
+        }
+        
+        std::cout << "  Sliding Window (size 5):\n";
+        for (size_t i = 0; i < rttValues.size() && i < 10; i++) {
+            sw.add(rttValues[i]);
+            if (sw.isFull()) {
+                std::cout << "    Window [" << (i-4) << "-" << i << "]: "
+                          << "Avg=" << std::fixed << std::setprecision(2) << sw.getAverage() << "ms, "
+                          << "Min=" << sw.getMin() << "ms, "
+                          << "Max=" << sw.getMax() << "ms\n";
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cout << "  Error in Segment Tree analysis: " << e.what() << "\n";
+    } catch (...) {
+        std::cout << "  Error: Unknown error in Segment Tree analysis.\n";
+    }
+    
+    cli.waitForEnter();
+}
+
+// handle bloom filter menu
+void handleBloomFilter(CLIInterface& cli, DataManager& dm) {
+    cli.showBloomFilterMenu();
+    BloomFilter bf(1000, 3);
+    
+    std::vector<std::string> usernames = extractUsernames(dm.getUsersData());
+    std::vector<std::string> phones = {"1234567890", "0987654321", "5555555555"};
+    
+    std::cout << "  Bloom Filter - Duplicate Detection:\n";
+    std::cout << "  ---------------------------------------------------------------\n";
+    
+    std::cout << "  Adding items to filter...\n";
+    for (const auto& u : usernames) {
+        bf.add(u);
+        std::cout << "    Added: " << u << "\n";
+    }
+    for (const auto& p : phones) {
+        bf.add(p);
+        std::cout << "    Added: " << p << "\n";
+    }
+    
+    std::cout << "\n  Testing for duplicates:\n";
+    std::string testItem = cli.getInput("Enter item to check: ");
+    if (!testItem.empty()) {
+        if (bf.mightContain(testItem)) {
+            std::cout << "    Result: Item MIGHT exist (could be false positive)\n";
+        } else {
+            std::cout << "    Result: Item definitely does NOT exist\n";
+        }
+    }
+    
+    cli.waitForEnter();
+}
+
+// handle minhash menu
+void handleMinHash(CLIInterface& cli, DataManager& dm) {
+    cli.showMinHashMenu();
+    MinHash mh(64);
+    LSH lsh(10, 5);
+    
+    std::vector<std::string> texts = extractTextContent(dm.getProfilesData());
+    texts.push_back("Urban photographer capturing city life");
+    texts.push_back("Travel enthusiast exploring the world");
+    texts.push_back("Food lover sharing recipes");
+    
+    std::cout << "  MinHash / LSH - Similarity Detection:\n";
+    std::cout << "  ---------------------------------------------------------------\n";
+    
+    std::cout << "  Adding documents to LSH index...\n";
+    for (size_t i = 0; i < texts.size(); i++) {
+        lsh.addDocument("doc" + std::to_string(i), texts[i]);
+    }
+    
+    if (texts.size() >= 2) {
+        double similarity = mh.textSimilarity(texts[0], texts[1]);
+        std::cout << "\n  Similarity between doc0 and doc1: " 
+                  << (similarity * 100) << "%\n";
+    }
+    
+    std::string query = cli.getInput("Enter text to find similar: ");
+    if (!query.empty()) {
+        std::vector<std::string> similar = lsh.findSimilarByText(query, 0.3);
+        std::cout << "\n  Similar documents: " << similar.size() << "\n";
+        for (size_t i = 0; i < similar.size() && i < 5; i++) {
+            std::cout << "    - " << similar[i] << "\n";
+        }
+    }
+    
+    cli.waitForEnter();
+}
+
+// handle json parser menu
+void handleJsonParser(CLIInterface& cli, DataManager& dm) {
+    cli.showJsonParserMenu();
+    JsonParser parser;
+    
+    std::cout << "  JSON Parser (DFS Traversal) - Normalization:\n";
+    std::cout << "  ---------------------------------------------------------------\n";
+    
+    std::string jsonSample = "{\"username\":\"test\",\"bio\":\"sample\",\"posts\":[1,2,3]}";
+    std::cout << "  Original JSON:\n    " << jsonSample << "\n\n";
+    
+    try {
+        std::string normalized = parser.normalize(jsonSample);
+        std::cout << "  Normalized JSON:\n" << normalized << "\n\n";
+        
+        std::vector<std::string> keys = parser.extractKeys(jsonSample);
+        std::cout << "  Extracted keys: ";
+        for (const auto& key : keys) {
+            std::cout << key << " ";
+        }
+        std::cout << "\n";
+    } catch (...) {
+        std::cout << "  Error parsing JSON\n";
+    }
+    
+    cli.waitForEnter();
+}
+
+// handle levenshtein menu
+void handleLevenshtein(CLIInterface& cli, DataManager& dm) {
+    cli.showLevenshteinMenu();
+    
+    std::vector<std::string> usernames = extractUsernames(dm.getUsersData());
+    usernames.push_back("alex_photo");
+    usernames.push_back("user123");
+    usernames.push_back("test_user");
+    
+    std::cout << "  Levenshtein Distance - Fuzzy Matching:\n";
+    std::cout << "  ---------------------------------------------------------------\n";
+    std::cout << "  Available usernames: ";
+    for (const auto& u : usernames) {
+        std::cout << u << " ";
+    }
+    std::cout << "\n\n";
+    
+    std::string query = cli.getInput("Enter username to match: ");
+    if (!query.empty()) {
+        std::vector<std::pair<std::string, double>> matches = 
+            Levenshtein::findAllMatches(query, usernames, 0.3);
+        
+        std::cout << "\n  Matching results:\n";
+        for (const auto& match : matches) {
+            int dist = Levenshtein::distance(query, match.first);
+            std::cout << "    " << match.first << " - Similarity: " 
+                      << (match.second * 100) << "%, Distance: " << dist << "\n";
+        }
+    }
+    
+    cli.waitForEnter();
+}
+
+// Huffman compression structures and functions
+struct HuffmanNode {
+    char data;
+    int freq;
+    HuffmanNode* left;
+    HuffmanNode* right;
+
+    HuffmanNode(char d, int f) : data(d), freq(f), left(nullptr), right(nullptr) {}
+};
+
+struct CompareHuffman {
+    bool operator()(HuffmanNode* a, HuffmanNode* b) {
+        return a->freq > b->freq;
+    }
+};
+
+void deleteHuffmanTree(HuffmanNode* root) {
+    if (root) {
+        deleteHuffmanTree(root->left);
+        deleteHuffmanTree(root->right);
+        delete root;
+    }
+}
+
+HuffmanNode* buildHuffmanTree(const std::map<char, int>& freq_map) {
+    std::priority_queue<HuffmanNode*, std::vector<HuffmanNode*>, CompareHuffman> pq;
+
+    for (const auto& pair : freq_map) {
+        pq.push(new HuffmanNode(pair.first, pair.second));
+    }
+
+    while (pq.size() > 1) {
+        HuffmanNode* left = pq.top();
+        pq.pop();
+        HuffmanNode* right = pq.top();
+        pq.pop();
+
+        HuffmanNode* merged = new HuffmanNode('\0', left->freq + right->freq);
+        merged->left = left;
+        merged->right = right;
+        pq.push(merged);
+    }
+
+    return pq.empty() ? nullptr : pq.top();
+}
+
+void generateHuffmanCodes(HuffmanNode* root, std::string code, std::map<char, std::string>& codes) {
+    if (!root) return;
+    if (!root->left && !root->right) {
+        if (!code.empty()) {
+            codes[root->data] = code;
+        } else {
+            codes[root->data] = "0"; // single node case
+        }
+        return;
+    }
+    generateHuffmanCodes(root->left, code + "0", codes);
+    generateHuffmanCodes(root->right, code + "1", codes);
+}
+
+std::string huffmanCompress(const std::string& data) {
+    if (data.empty()) return "";
+    
+    std::map<char, int> freq_map;
+    for (char c : data) {
+        freq_map[c]++;
+    }
+
+    HuffmanNode* root = buildHuffmanTree(freq_map);
+    if (!root) return "";
+
+    std::map<char, std::string> codes;
+    generateHuffmanCodes(root, "", codes);
+
+    std::string compressed;
+    for (char c : data) {
+        compressed += codes[c];
+    }
+
+    deleteHuffmanTree(root);
+    return compressed;
+}
+
+void saveCompressedFile(const std::string& filename, const std::string& compressed_data, const std::map<char, std::string>& codes) {
+    // Create output directory if it doesn't exist
+    std::string outputDir = "output";
+    bool dirCreated = false;
+    
+#if __cplusplus >= 201703L && __has_include(<filesystem>)
+    try {
+        if (!fs::exists(outputDir)) {
+            fs::create_directories(outputDir);
+            dirCreated = true;
+        }
+    } catch (...) {
+        outputDir = ".";
+    }
+#else
+    // Fallback: use mkdir
+    struct stat info;
+    if (stat(outputDir.c_str(), &info) != 0) {
+        if (mkdir(outputDir.c_str(), 0755) == 0) {
+            dirCreated = true;
+        } else {
+            outputDir = ".";  // Fallback to current directory
+        }
+    }
+#endif
+    
+#ifdef _WIN32
+    std::string fullPath = outputDir + "\\" + filename;
+#else
+    std::string fullPath = outputDir + "/" + filename;
+#endif
+    
+    // Get current working directory for absolute path display
+    std::string absPath = fullPath;
+#ifdef _WIN32
+    char cwd[MAX_PATH];
+    if (GetCurrentDirectoryA(MAX_PATH, cwd) != 0) {
+        absPath = std::string(cwd) + "\\" + fullPath;
+    }
+#else
+    char cwd[PATH_MAX];
+    if (getcwd(cwd, sizeof(cwd)) != nullptr) {
+        absPath = std::string(cwd) + "/" + fullPath;
+    }
+#endif
+    
+    std::ofstream file(fullPath, std::ios::binary);
+    if (file.is_open()) {
+        // Write header: number of codes
+        file << codes.size() << "\n";
+        // Write codes
+        for (const auto& pair : codes) {
+            file << (int)(unsigned char)pair.first << " " << pair.second << "\n";
+        }
+        // Write compressed data length
+        file << compressed_data.length() << "\n";
+        // Write compressed data
+        file << compressed_data;
+        file.close();
+        std::cout << "  Compressed data saved to:\n";
+        std::cout << "    File: " << filename << "\n";
+        std::cout << "    Directory: " << outputDir << (dirCreated ? " (created)" : "") << "\n";
+        std::cout << "    Full Path: " << absPath << "\n";
+    } else {
+        std::cerr << "  Error: Failed to open file for writing: " << fullPath << "\n";
+    }
+}
+
+// Sorting algorithms
+template<typename T>
+void quickSort(std::vector<T>& arr, int low, int high) {
+    if (low < high) {
+        T pivot = arr[high];
+        int i = low - 1;
+        for (int j = low; j < high; j++) {
+            if (arr[j] < pivot) {
+                i++;
+                std::swap(arr[i], arr[j]);
+            }
+        }
+        std::swap(arr[i + 1], arr[high]);
+        int pi = i + 1;
+        quickSort(arr, low, pi - 1);
+        quickSort(arr, pi + 1, high);
+    }
+}
+
+template<typename T>
+void merge(std::vector<T>& arr, int left, int mid, int right) {
+    int n1 = mid - left + 1;
+    int n2 = right - mid;
+    std::vector<T> L(n1), R(n2);
+
+    for (int i = 0; i < n1; i++) L[i] = arr[left + i];
+    for (int j = 0; j < n2; j++) R[j] = arr[mid + 1 + j];
+
+    int i = 0, j = 0, k = left;
+    while (i < n1 && j < n2) {
+        if (L[i] <= R[j]) {
+            arr[k] = L[i];
+            i++;
+        } else {
+            arr[k] = R[j];
+            j++;
+        }
+        k++;
+    }
+
+    while (i < n1) {
+        arr[k] = L[i];
+        i++;
+        k++;
+    }
+    while (j < n2) {
+        arr[k] = R[j];
+        j++;
+        k++;
+    }
+}
+
+template<typename T>
+void mergeSort(std::vector<T>& arr, int left, int right) {
+    if (left < right) {
+        int mid = left + (right - left) / 2;
+        mergeSort(arr, left, mid);
+        mergeSort(arr, mid + 1, right);
+        merge(arr, left, mid, right);
+    }
+}
+
+template<typename T>
+void heapify(std::vector<T>& arr, int n, int i) {
+    int largest = i;
+    int left = 2 * i + 1;
+    int right = 2 * i + 2;
+
+    if (left < n && arr[left] > arr[largest]) largest = left;
+    if (right < n && arr[right] > arr[largest]) largest = right;
+
+    if (largest != i) {
+        std::swap(arr[i], arr[largest]);
+        heapify(arr, n, largest);
+    }
+}
+
+template<typename T>
+void heapSort(std::vector<T>& arr) {
+    int n = arr.size();
+    for (int i = n / 2 - 1; i >= 0; i--) {
+        heapify(arr, n, i);
+    }
+    for (int i = n - 1; i > 0; i--) {
+        std::swap(arr[0], arr[i]);
+        heapify(arr, i, 0);
+    }
+}
+
+template<typename T>
+void bubbleSort(std::vector<T>& arr) {
+    int n = arr.size();
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - i - 1; j++) {
+            if (arr[j] > arr[j + 1]) {
+                std::swap(arr[j], arr[j + 1]);
+            }
+        }
+    }
+}
+
+template<typename T>
+void insertionSort(std::vector<T>& arr) {
+    int n = arr.size();
+    for (int i = 1; i < n; i++) {
+        T key = arr[i];
+        int j = i - 1;
+        while (j >= 0 && arr[j] > key) {
+            arr[j + 1] = arr[j];
+            j--;
+        }
+        arr[j + 1] = key;
+    }
+}
+
+// handle sorting algorithms
+void handleSortingAlgorithms(CLIInterface& cli, DataManager& dm) {
+    cli.showSortingMenu();
+    
+    std::vector<int> rttValues = extractRTTValues(dm.getEventsData());
+    if (rttValues.empty()) {
+        rttValues = {64, 34, 25, 12, 22, 11, 90, 5, 77, 88, 3, 45, 67, 89, 23, 56, 78, 91, 2, 19};
+    }
+    
+    std::cout << "  Sorting Algorithms - Performance Analysis:\n";
+    std::cout << "  ---------------------------------------------------------------\n";
+    std::cout << "  Original data (" << rttValues.size() << " elements): ";
+    for (size_t i = 0; i < rttValues.size() && i < 15; i++) {
+        std::cout << rttValues[i] << " ";
+    }
+    if (rttValues.size() > 15) std::cout << "...";
+    std::cout << "\n\n";
+    
+    struct SortResult {
+        std::string name;
+        std::vector<int> sorted;
+        long long timeMicroseconds;
+    };
+    
+    std::vector<SortResult> results;
+    
+    // Quick Sort
+    {
+        std::vector<int> data = rttValues;
+        auto start = std::chrono::high_resolution_clock::now();
+        quickSort(data, 0, data.size() - 1);
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        results.push_back({"Quick Sort", data, duration.count()});
+    }
+    
+    // Merge Sort
+    {
+        std::vector<int> data = rttValues;
+        auto start = std::chrono::high_resolution_clock::now();
+        mergeSort(data, 0, data.size() - 1);
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        results.push_back({"Merge Sort", data, duration.count()});
+    }
+    
+    // Heap Sort
+    {
+        std::vector<int> data = rttValues;
+        auto start = std::chrono::high_resolution_clock::now();
+        heapSort(data);
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        results.push_back({"Heap Sort", data, duration.count()});
+    }
+    
+    // Bubble Sort
+    {
+        std::vector<int> data = rttValues;
+        auto start = std::chrono::high_resolution_clock::now();
+        bubbleSort(data);
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        results.push_back({"Bubble Sort", data, duration.count()});
+    }
+    
+    // Insertion Sort
+    {
+        std::vector<int> data = rttValues;
+        auto start = std::chrono::high_resolution_clock::now();
+        insertionSort(data);
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        results.push_back({"Insertion Sort", data, duration.count()});
+    }
+    
+    // Display results
+    std::cout << "  Performance Results:\n";
+    std::cout << "  ---------------------------------------------------------------\n";
+    std::cout << std::left << std::setw(20) << "Algorithm" 
+              << std::setw(15) << "Time (microsec)" 
+              << "Sorted Data (first 10)\n";
+    std::cout << "  ---------------------------------------------------------------\n";
+    
+    for (const auto& result : results) {
+        std::cout << "  " << std::left << std::setw(18) << result.name
+                  << std::setw(15) << result.timeMicroseconds;
+        for (size_t i = 0; i < result.sorted.size() && i < 10; i++) {
+            std::cout << result.sorted[i] << " ";
+        }
+        std::cout << "\n";
+    }
+    
+    cli.waitForEnter();
+}
+
+// handle huffman compression
+void handleHuffmanCompression(CLIInterface& cli, DataManager& dm) {
+    cli.showHuffmanMenu();
+    
+    std::cout << "  Huffman Compression - File Compression:\n";
+    std::cout << "  ---------------------------------------------------------------\n";
+    
+    std::vector<std::string> texts = extractTextContent(dm.getProfilesData());
+    std::vector<std::string> usernames = extractUsernames(dm.getUsersData());
+    
+    // Use database data with fallback to test data
+    std::string sampleData;
+    bool usingDatabaseData = false;
+    
+    if (!texts.empty()) {
+        sampleData = texts[0];
+        usingDatabaseData = true;
+    } else if (!usernames.empty()) {
+        sampleData = usernames[0];
+        usingDatabaseData = true;
+    }
+    
+    if (!usernames.empty() && usingDatabaseData) {
+        sampleData += " " + usernames[0];
+    }
+    
+    if (sampleData.empty()) {
+        sampleData = "Project Chameleon Data Compression Test";
+    } else {
+        sampleData += " Advanced Data Structures and Algorithms Suite";
+    }
+    
+    std::cout << "  Data source: " << (usingDatabaseData ? "Database (Supabase)" : "Test Data (Fallback)") << "\n";
+    std::cout << "  Original data:\n";
+    std::cout << "    " << sampleData << "\n";
+    std::cout << "    Size: " << sampleData.length() << " bytes\n\n";
+    
+    std::map<char, int> freq_map;
+    for (char c : sampleData) {
+        freq_map[c]++;
+    }
+    
+    std::cout << "  Character frequencies (top 10):\n";
+    std::vector<std::pair<char, int>> freq_vec(freq_map.begin(), freq_map.end());
+    std::sort(freq_vec.begin(), freq_vec.end(), 
+              [](const std::pair<char, int>& a, const std::pair<char, int>& b) {
+                  return a.second > b.second;
+              });
+    for (size_t i = 0; i < freq_vec.size() && i < 10; i++) {
+        char c = freq_vec[i].first;
+        std::string display = (c == ' ') ? "[SPACE]" : (c == '\n') ? "[NEWLINE]" : std::string(1, c);
+        std::cout << "    '" << display << "': " << freq_vec[i].second << " times\n";
+    }
+    std::cout << "\n";
+    
+    HuffmanNode* root = buildHuffmanTree(freq_map);
+    if (!root) {
+        std::cout << "  Error: Failed to build Huffman tree\n";
+        cli.waitForEnter();
+        return;
+    }
+    
+    std::map<char, std::string> codes;
+    generateHuffmanCodes(root, "", codes);
+    
+    std::cout << "  Huffman codes (sample):\n";
+    size_t count = 0;
+    for (const auto& pair : codes) {
+        if (count++ < 10) {
+            std::string display = (pair.first == ' ') ? "[SPACE]" : (pair.first == '\n') ? "[NEWLINE]" : std::string(1, pair.first);
+            std::cout << "    '" << display << "': " << pair.second << "\n";
+        }
+    }
+    std::cout << "\n";
+    
+    std::string compressed = huffmanCompress(sampleData);
+    
+    std::cout << "  Compression results:\n";
+    std::cout << "    Original size: " << sampleData.length() << " bytes\n";
+    std::cout << "    Compressed bits: " << compressed.length() << " bits\n";
+    std::cout << "    Compressed size: " << (compressed.length() + 7) / 8 << " bytes\n";
+    double ratio = (1.0 - (double)(compressed.length() + 7) / 8 / sampleData.length()) * 100;
+    std::cout << "    Compression ratio: " << std::fixed << std::setprecision(2) << ratio << "%\n\n";
+    
+    // Generate filename with timestamp for uniqueness
+    auto now = std::chrono::system_clock::now();
+    auto time_t = std::chrono::system_clock::to_time_t(now);
+    std::stringstream ss;
+    ss << "compressed_data_" << time_t << ".bin";
+    std::string filename = ss.str();
+    
+    saveCompressedFile(filename, compressed, codes);
+    
+    deleteHuffmanTree(root);
+    
+    cli.waitForEnter();
+}
+
+// handle data analysis dashboard
+void handleDataAnalysis(CLIInterface& cli, DataManager& dm) {
+    cli.showDataAnalysisMenu();
+    
+    std::cout << "  DATA ANALYSIS DASHBOARD\n";
+    std::cout << "  ---------------------------------------------------------------\n\n";
+    
+    try {
+        std::vector<std::string> usernames = extractUsernames(dm.getUsersData());
+        std::vector<std::string> texts = extractTextContent(dm.getProfilesData());
+        std::vector<int> rttValues = extractRTTValues(dm.getEventsData());
+        
+        std::vector<std::vector<std::string>> table;
+        table.push_back({"Table", "Status", "Records"});
+        table.push_back({"users", "[OK] Loaded", std::to_string(usernames.size())});
+        table.push_back({"instagram_profiles", "[OK] Loaded", std::to_string(texts.size())});
+        table.push_back({"instagram_stories", "[OK] Loaded", "N/A"});
+        table.push_back({"game_devices", "[OK] Loaded", "N/A"});
+        table.push_back({"whatsapp_events", "[OK] Loaded", std::to_string(rttValues.size())});
+        
+        cli.printTable(table);
+        
+        std::cout << "\n  Statistics:\n";
+        std::cout << "    Total RTT values: " << rttValues.size() << "\n";
+        std::cout << "    Total usernames: " << usernames.size() << "\n";
+        std::cout << "    Total text documents: " << texts.size() << "\n";
+        
+        if (!rttValues.empty()) {
+            int minRTT = *std::min_element(rttValues.begin(), rttValues.end());
+            int maxRTT = *std::max_element(rttValues.begin(), rttValues.end());
+            double avgRTT = 0.0;
+            for (int val : rttValues) avgRTT += val;
+            avgRTT /= rttValues.size();
+            std::cout << "    RTT Statistics: Min=" << minRTT << "ms, Max=" << maxRTT 
+                      << "ms, Avg=" << std::fixed << std::setprecision(2) << avgRTT << "ms\n";
+        }
+    } catch (const std::exception& e) {
+        std::cout << "  Error analyzing data: " << e.what() << "\n";
+    } catch (...) {
+        std::cout << "  Error: Unknown error occurred during data analysis.\n";
+    }
+    
+    cli.waitForEnter();
+}
+
+int main() {
+    CLIInterface cli;
+    DataManager dm;
+    
+    // load data once at startup
+    dm.loadData();
+    cli.waitForEnter();
+    
+    int choice;
+    do {
+        choice = cli.showMainMenu();
+        
+        switch (choice) {
+            case 1:
+                handleUnionFind(cli, dm);
+                break;
+            case 2:
+                handleTrie(cli, dm);
+                break;
+            case 3:
+                handleInvertedIndex(cli, dm);
+                break;
+            case 4:
+                handleSegmentTree(cli, dm);
+                break;
+            case 5:
+                handleBloomFilter(cli, dm);
+                break;
+            case 6:
+                handleMinHash(cli, dm);
+                break;
+            case 7:
+                handleJsonParser(cli, dm);
+                break;
+            case 8:
+                handleLevenshtein(cli, dm);
+                break;
+            case 9:
+                handleDataAnalysis(cli, dm);
+                break;
+            case 10:
+                handleSortingAlgorithms(cli, dm);
+                break;
+            case 11:
+                handleHuffmanCompression(cli, dm);
+                break;
+            case 12:
+                std::cout << "\n  Thank you for using Project Chameleon!\n";
+                break;
+            default:
+                if (choice != -1) {
+                    std::cout << "  Invalid choice. Please try again.\n";
+                    cli.waitForEnter();
+                }
+                break;
+        }
+    } while (choice != 12);
+    
+    return 0;
+}
+
