@@ -4,6 +4,7 @@
   "description": "Data Structures & Algorithms project",
   "dependencies": [
     "curl",
-    "zlib"
+    "zlib",
+    "nlohmann-json"
   ]
 }

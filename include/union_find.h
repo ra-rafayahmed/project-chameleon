@@ -15,6 +15,13 @@ public:
     // find root of element with path compression
     std::string find(const std::string& x);
     
+    // Numeric API (compatibility): initialize with n anonymous integer ids
+    void Initialize(size_t n);
+    // Find integer id root
+    int Find(int x);
+    // Union integer ids
+    void Union(int x, int y);
+    
     // union two sets by rank
     void unite(const std::string& x, const std::string& y);
     

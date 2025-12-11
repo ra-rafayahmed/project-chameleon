@@ -4,6 +4,10 @@
 #include <string>
 #include <vector>
 #include <curl/curl.h>
+#include <nlohmann/json.hpp>
+#include "supabase_models.h"
+
+using json = nlohmann::json;
 
 struct SupabaseConfig {
     std::string url = "https://qdsbdmikobhynjmfzweb.supabase.co";
@@ -14,13 +18,20 @@ struct WriteData {
     std::string data;
 };
 
-// supabase rest api client
+// supabase rest api client with data parsing
 class SupabaseClient {
 private:
     SupabaseConfig config;
     CURL* curl;
     
     static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
+    
+    // Helper methods for parsing JSON responses
+    InstagramProfile parseInstagramProfile(const json& profileJson);
+    WhatsAppEvent parseWhatsAppEvent(const json& eventJson);
+    GameEvent parseGameEvent(const json& gameJson);
+    DeviceInfo parseDeviceInfo(const json& deviceJson);
+    InstagramPost parseInstagramPost(const json& postJson);
 
 public:
     SupabaseClient();
@@ -35,17 +46,24 @@ public:
     // get users data
     std::string getUsers();
     
-    // get instagram profiles
-    std::string getInstagramProfiles();
+    // Parse and get Instagram profiles from JSON
+    std::vector<InstagramProfile> getInstagramProfiles();
     
-    // get instagram stories
+    // Parse and get Instagram stories
     std::string getInstagramStories();
     
     // get game devices
     std::string getGameDevices();
+    // Parse and get Game events from JSON
+    std::vector<GameEvent> getGameEvents();
+    std::vector<GameEvent> loadGameEventsFromFile(const std::string& filepath);
     
-    // get whatsapp events
-    std::string getWhatsAppEvents();
+    // Parse and get WhatsApp events from JSON
+    std::vector<WhatsAppEvent> getWhatsAppEvents();
+    
+    // Load data from local JSON file (for offline testing)
+    std::vector<InstagramProfile> loadInstagramProfilesFromFile(const std::string& filepath);
+    std::vector<WhatsAppEvent> loadWhatsAppEventsFromFile(const std::string& filepath);
 };
 
 #endif
