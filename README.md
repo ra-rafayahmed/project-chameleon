@@ -26,6 +26,13 @@ storage and organization using data structures and algorithms
 The goal is to help students understand how OSINT-based data gathering and threat systems work, without using real personal information or performing any harmful actions.
 
 ```
+COLLABORAATORS:
+-> Rafay Ahmed
+-> Muhammad Abdurrehman
+-> Hadia Noor
+-> Umme Aimen
+```
+```
 /project-root
 │
 ├── osint_module/
