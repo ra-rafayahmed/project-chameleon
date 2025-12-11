@@ -21,54 +21,32 @@ void CLIInterface::clearScreen() {
 
 void CLIInterface::printHeader() {
     std::cout << "\n";
-    std::cout << "================================================================\n";
-    std::cout << "                                                                \n";
-    std::cout << "        PROJECT CHAMELEON - DSA ANALYZER                        \n";
-    std::cout << "                                                                \n";
-    std::cout << "        Advanced Data Structures & Algorithms Suite            \n";
-    std::cout << "                                                                \n";
-    std::cout << "================================================================\n";
+    std::cout << "  ============================================\n";
+    std::cout << "  PROJECT CHAMELEON - Data Analysis System\n";
+    std::cout << "  ============================================\n";
     std::cout << "\n";
 }
 
 void CLIInterface::printSeparator() {
-    std::cout << "----------------------------------------------------------------\n";
+    std::cout << "  " << std::string(60, '-') << "\n";
 }
 
 void CLIInterface::printMenu() {
-    printHeader();
-    std::cout << "  MAIN MENU:\n";
-    printSeparator();
-    std::cout << "  1.  Graph + Union-Find (DSU) - Identity Unification\n";
-    std::cout << "  2.  Trie - Username/Phone/Device ID Indexing\n";
-    std::cout << "  3.  Inverted Index - Bio/Caption/JSON Analysis\n";
-    std::cout << "  4.  Segment Tree + Sliding Window - RTT Analysis\n";
-    std::cout << "  5.  Bloom Filter - Duplicate Detection\n";
-    std::cout << "  6.  MinHash / LSH - Similarity Detection\n";
-    std::cout << "  7.  JSON Parser (DFS) - Normalization\n";
-    std::cout << "  8.  Levenshtein Distance - Fuzzy Matching\n";
-    std::cout << "  9.  Data Analysis Dashboard\n";
-    std::cout << "  10. Sorting Algorithms - Performance Analysis\n";
-    std::cout << "  11. Huffman Compression - File Compression\n";
-    std::cout << "  12. Exit\n";
-    printSeparator();
+    // Menu is now in main.cpp with the correct structure
 }
 
 int CLIInterface::showMainMenu() {
-    clearScreen();
-    printMenu();
-    std::cout << "  Enter your choice (1-12): ";
-    return getChoice(12);
+    // Main menu is handled in main.cpp
+    return 0;
 }
 
 void CLIInterface::printSubMenu(const std::string& title, const std::vector<std::string>& options) {
-    printSeparator();
+    std::cout << "\n  ============================================\n";
     std::cout << "  " << title << "\n";
-    printSeparator();
+    std::cout << "  ============================================\n\n";
     for (size_t i = 0; i < options.size(); i++) {
         std::cout << "  " << (i + 1) << ". " << options[i] << "\n";
     }
-    std::cout << "  " << (options.size() + 1) << ". Back to Main Menu\n";
     printSeparator();
 }
 
@@ -95,7 +73,7 @@ int CLIInterface::getChoice(int maxChoice) {
 void CLIInterface::waitForEnter() {
     std::cout << "\n  Press Enter to continue...";
     std::string dummy;
-    std::getline(std::cin, dummy);  // Use getline to handle both Enter key and newline from file
+    std::getline(std::cin, dummy);
 }
 
 void CLIInterface::printResult(const std::string& title, const std::string& content) {
@@ -121,79 +99,46 @@ void CLIInterface::printTable(const std::vector<std::vector<std::string>>& data)
 }
 
 void CLIInterface::showUnionFindMenu() {
-    clearScreen();
-    printHeader();
-    std::cout << "  UNION-FIND (DSU) - Identity Unification\n";
-    // implementation will be in main.cpp
+    // Deprecated - functionality moved to main.cpp
 }
 
 void CLIInterface::showTrieMenu() {
-    clearScreen();
-    printHeader();
-    std::cout << "  TRIE - Indexing System\n";
-    // implementation will be in main.cpp
+    // Deprecated - functionality moved to main.cpp
 }
 
 void CLIInterface::showInvertedIndexMenu() {
-    clearScreen();
-    printHeader();
-    std::cout << "  INVERTED INDEX - Text Analysis\n";
-    // implementation will be in main.cpp
+    // Deprecated - functionality moved to main.cpp
 }
 
 void CLIInterface::showSegmentTreeMenu() {
-    clearScreen();
-    printHeader();
-    std::cout << "  SEGMENT TREE + SLIDING WINDOW - RTT Analysis\n";
-    // implementation will be in main.cpp
+    // Deprecated - functionality moved to main.cpp
 }
 
 void CLIInterface::showBloomFilterMenu() {
-    clearScreen();
-    printHeader();
-    std::cout << "  BLOOM FILTER - Duplicate Detection\n";
-    // implementation will be in main.cpp
+    // Deprecated - functionality moved to main.cpp
 }
 
 void CLIInterface::showMinHashMenu() {
-    clearScreen();
-    printHeader();
-    std::cout << "  MINHASH / LSH - Similarity Detection\n";
-    // implementation will be in main.cpp
+    // Deprecated - functionality moved to main.cpp
 }
 
 void CLIInterface::showJsonParserMenu() {
-    clearScreen();
-    printHeader();
-    std::cout << "  JSON PARSER (DFS) - Normalization\n";
-    // implementation will be in main.cpp
+    // Deprecated - functionality moved to main.cpp
 }
 
 void CLIInterface::showLevenshteinMenu() {
-    clearScreen();
-    printHeader();
-    std::cout << "  LEVENSHTEIN DISTANCE - Fuzzy Matching\n";
-    // implementation will be in main.cpp
+    // Deprecated - functionality moved to main.cpp
 }
 
 void CLIInterface::showDataAnalysisMenu() {
-    clearScreen();
-    printHeader();
-    std::cout << "  DATA ANALYSIS DASHBOARD\n";
-    // implementation will be in main.cpp
+    // Deprecated - functionality moved to main.cpp
 }
 
 void CLIInterface::showSortingMenu() {
-    clearScreen();
-    printHeader();
-    std::cout << "  SORTING ALGORITHMS - Performance Analysis\n";
-    // implementation will be in main.cpp
+    // Deprecated - functionality moved to main.cpp
 }
 
 void CLIInterface::showHuffmanMenu() {
-    clearScreen();
-    printHeader();
-    std::cout << "  HUFFMAN COMPRESSION - File Compression\n";
-    // implementation will be in main.cpp
+    // Deprecated - functionality moved to main.cpp
 }
 
