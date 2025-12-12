@@ -1,3 +1,0 @@
-C:/Users/hadia/OneDrive/Desktop/DSA/build/CMakeFiles/chameleon_dsa.dir
-C:/Users/hadia/OneDrive/Desktop/DSA/build/CMakeFiles/ALL_BUILD.dir
-C:/Users/hadia/OneDrive/Desktop/DSA/build/CMakeFiles/ZERO_CHECK.dir

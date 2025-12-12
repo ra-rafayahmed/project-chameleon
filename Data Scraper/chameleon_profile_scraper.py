@@ -8,7 +8,7 @@ import json
 import os
 
 URL = "https://project-chameleon.vercel.app/"
-USERNAME_TO_SEARCH = "alex_photo"
+USERNAME_TO_SEARCH = "sophie_arts"
 
 # --- Setup output folder ---
 OUTPUT_FOLDER = "output_profiles"
