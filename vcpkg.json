@@ -1,0 +1,10 @@
+{
+  "name": "chameleon-dsa",
+  "version": "1.0.0",
+  "description": "Data Structures & Algorithms project",
+  "dependencies": [
+    "curl",
+    "zlib",
+    "nlohmann-json"
+  ]
+}
