@@ -1,4 +1,4 @@
-# project-chameleon
+# project-chameleon (WORK PAUSED DUE TO FINALS)
 A university project that simulates how OSINT tools gather and organize publicly available data. Uses synthetic info only. Includes modules for fake data collection, basic analysis, compression, and DSA-based storage.
 
 This project is a university assignment that focuses on simulating an OSINT-style data collection system in a safe and controlled way. The idea is to show how attackers might gather public information from online sources and combine it with automated data from an app to create a digital profile — all using synthetic (fake) data for safety.
@@ -40,7 +40,7 @@ The goal is to help students understand how OSINT-based data gathering and threa
 │   ├── indexing/           # trees, hashing, sorting
 │   └── database/           # SQLite / JSON storage
 │
-├── analysis/
+├── analysis/ (UNDER WORK)
 │   ├── notebooks/
 │   ├── plots/
 │   └── reports/
