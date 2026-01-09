@@ -1,0 +1,78 @@
+-- enable uuid extension
+create extension if not exists "uuid-ossp";
+
+-- master users table (unified identity)
+create table if not exists users (
+  user_id uuid primary key default uuid_generate_v4(),
+  username text,
+  phone text,
+  device_id text,
+  created_at timestamptz default now()
+);
+
+create unique index if not exists users_username_idx on users(username);
+create unique index if not exists users_phone_idx on users(phone);
+create unique index if not exists users_device_id_idx on users(device_id);
+
+-- instagram profiles (raw + parsed columns)
+create table if not exists instagram_profiles (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references users(user_id) on delete set null,
+  username text,
+  bio text,
+  posts_count int,
+  followers_count int,
+  following_count int,
+  raw jsonb,
+  created_at timestamptz default now()
+);
+create index if not exists instagram_profiles_user_idx on instagram_profiles(user_id);
+
+-- story metadata (images stored in Supabase Storage or local path)
+create table if not exists instagram_stories (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references users(user_id) on delete cascade,
+  username text,
+  story_index int,
+  img_url text,
+  local_path text,
+  caption text,
+  raw jsonb,
+  created_at timestamptz default now()
+);
+create index if not exists stories_user_idx on instagram_stories(user_id);
+
+-- game/device telemetry
+create table if not exists game_devices (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references users(user_id) on delete set null,
+  device_id text,
+  gps_lat double precision,
+  gps_lng double precision,
+  ip text,
+  timezone text,
+  system_language text,
+  device_region text,
+  keyboard_layout text,
+  ping int,
+  raw jsonb,
+  created_at timestamptz default now()
+);
+create index if not exists game_devices_device_idx on game_devices(device_id);
+create index if not exists game_devices_user_idx on game_devices(user_id);
+
+-- whatsapp events / rtt timeline
+create table if not exists whatsapp_events (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references users(user_id) on delete set null,
+  phone_number text,
+  event_time timestamptz,
+  presence text,
+  rtt int,
+  device_count int,
+  devices jsonb,
+  raw jsonb,
+  created_at timestamptz default now()
+);
+create index if not exists whatsapp_events_phone_idx on whatsapp_events(phone_number);
+create index if not exists whatsapp_events_user_idx on whatsapp_events(user_id);
